@@ -137,8 +137,7 @@ public class Matrix {
 	 * @return
 	 */
 	public Matrix getREF(final Consumer<RowReductionStep> stepConsumer) {
-		// TODO
-		return null;
+		return this.rowReduce(stepConsumer, false);
 	}
 	
 	/**
@@ -166,13 +165,126 @@ public class Matrix {
 	 * @return
 	 */
 	public Matrix getRREF(final Consumer<RowReductionStep> stepConsumer) {
-		// TODO
-		return null;
+		return this.rowReduce(stepConsumer, true);
 	}
 	
 	/**
+	 * 
+	 */
+	private Matrix rowReduce(final Consumer<RowReductionStep> stepConsumer, final boolean rref) {
+		final Matrix copyMatrix = new Matrix(this);
+		final double[][] data = copyMatrix.data;
+		final int rows = data.length;
+		final int columns = data[0].length;
+		final boolean hasStepConsumer = stepConsumer != null;
+		
+		int row = 0;
+		int column = 0;
+		
+		for (; column < columns; column++) {
+			
+			// Select a pivot position
+			
+			
+		}
+		
+		if (rref) {
+			
+			
+			
+		}
+		
+		return copyMatrix;
+	}
+	
+	/*
+	 * Converts the matrix to a pretty-print string.
+	 * ┌──┬──┬──┬──┬──┐
+	 * │0 │1 │2 │3 │4 │
+	 * ├──┼──┼──┼──┼──┤
+	 * │5 │6 │7 │8 │9 │
+	 * ├──┼──┼──┼──┼──┤
+	 * │10│11│12│13│14│
+	 * └──┴──┴──┴──┴──┘
+	 */
+	public String printToString() {
+		int cellWidth = 1;
+		for (int i = 0; i < this.data.length; i++) {
+			for (int j = 0; j < this.data[0].length; j++) {
+				final double n = this.data[i][j];
+				cellWidth = Math.max(cellWidth, String.valueOf(n).length());
+			}
+		}
+		int j = 0;
+		final int dMax = 1 + this.data[0].length * 2;
+		final StringBuilder b = new StringBuilder(this.data.length * dMax * cellWidth);
+		for (int d = 0; d < dMax; d++) {
+			if (d % 2 == 0) {
+				if (d == 0) {
+					b.append("┌");
+					for (int i = 0; i < this.data.length; i++) {
+						for (int c = 0; c < cellWidth; c++) {
+							b.append("─");
+						}
+						if (i < this.data.length - 1) {
+							b.append("┬");
+						}
+					}
+					b.append("┐");
+					b.append("\n");
+				} else if (d == dMax - 1) {
+					b.append("└");
+					for (int i = 0; i < this.data.length; i++) {
+						for (int c = 0; c < cellWidth; c++) {
+							b.append("─");
+						}
+						if (i < this.data.length - 1) {
+							b.append("┴");
+						}
+					}
+					b.append("┘");
+				} else {
+					b.append("├");
+					for (int i = 0; i < this.data.length; i++) {
+						for (int c = 0; c < cellWidth; c++) {
+							b.append("─");
+						}
+						if (i < this.data.length - 1) {
+							b.append("┼");
+						}
+					}
+					b.append("┤");
+					b.append("\n");
+				}
+			} else {
+				for (int i = 0; i < this.data.length; i++) {
+					b.append("│");
+					final double n = this.data[i][j];
+					final String s = String.valueOf(n);
+					b.append(s);
+					final int cellTemp = cellWidth - s.length();
+					for (int ct = 0; ct < cellTemp; ct++) {
+						b.append(" ");
+					}
+				}
+				b.append("│");
+				b.append("\n");
+				j++;
+			}
+		}
+		return b.toString();
+	}
+	
+	@Override
+	public String toString() {
+		return this.printToString();
+	}
+
+	/**
 	 * Gets the identity matrix of the given dimension.
-	 * @param dimension the dimension of the identity matrix to create.
+	 * 
+	 * @param dimension
+	 *            the dimension of the identity matrix to create.
 	 */
 	public static Matrix identity(final int dimension) {
 		final double[][] data = new double[dimension][dimension];
