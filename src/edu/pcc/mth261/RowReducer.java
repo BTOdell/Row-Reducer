@@ -32,7 +32,7 @@ public class RowReducer {
 						if (matrix != null) {
 							System.out.println("Row reducing matrix to Row Echelon Form:");
 							System.out.println(matrix.printToString());
-							final Matrix result = matrix.getREF();
+							final Matrix result = matrix.getREF().round(4);
 							System.out.println("Matrix in Row Echelon Form:");
 							System.out.println(result.printToString());
 						}
@@ -43,7 +43,7 @@ public class RowReducer {
 						if (matrix != null) {
 							System.out.println("Row reducing matrix to Reduced Row Echelon Form:");
 							System.out.println(matrix.printToString());
-							final Matrix result = matrix.getRREF();
+							final Matrix result = matrix.getRREF().round(4);
 							System.out.println("Matrix in Reduced Row Echelon Form:");
 							System.out.println(result.printToString());
 						}

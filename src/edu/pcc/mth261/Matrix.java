@@ -178,15 +178,10 @@ public class Matrix {
 			for (int r = 0; r < rows; r++) {
 				int pivotColumn = columns;
 				for (int c = lastPivot + 1; c < columns; c++) {
-					final double value = data[r][c];
-					if (value == 0) {
-						// Ignore, next column...
-					} else if (value == 1) {
+					if (data[r][c] != 0) {
 						// Found pivot
 						pivotColumn = c;
 						break;
-					} else {
-						throw new IllegalStateException("Invalid pivot value.");
 					}
 				}
 				lastPivot = pivotColumn;
