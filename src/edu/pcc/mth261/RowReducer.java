@@ -2,11 +2,7 @@ package edu.pcc.mth261;
 
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.regex.Pattern;
-
-import edu.pcc.mth261.Matrix.RowReductionStep;
 
 /**
  * 
@@ -36,7 +32,7 @@ public class RowReducer {
 						if (matrix != null) {
 							System.out.println("Row reducing matrix to Row Echelon Form:");
 							System.out.println(matrix.printToString());
-							final Matrix result = processMatrix(matrix::getREF);
+							final Matrix result = matrix.getREF();
 							System.out.println("Matrix in Row Echelon Form:");
 							System.out.println(result.printToString());
 						}
@@ -47,7 +43,7 @@ public class RowReducer {
 						if (matrix != null) {
 							System.out.println("Row reducing matrix to Reduced Row Echelon Form:");
 							System.out.println(matrix.printToString());
-							final Matrix result = processMatrix(matrix::getRREF);
+							final Matrix result = matrix.getRREF();
 							System.out.println("Matrix in Reduced Row Echelon Form:");
 							System.out.println(result.printToString());
 						}
@@ -70,6 +66,9 @@ public class RowReducer {
 		
 	}
 	
+	/**
+	 * 
+	 */
 	private static void printHelp() {
 		System.out.println("~~~ Help ~~~");
 		System.out.println("ref: Row reduces a matrix to Row Echelon Form.");
@@ -78,6 +77,11 @@ public class RowReducer {
 		System.out.println("~~~~~~~~~~~~");
 	}
 	
+	/**
+	 * 
+	 * @param scanner
+	 * @return
+	 */
 	private static Matrix readMatrix(final Scanner scanner) {
 		
 		Integer columnCount = null;
@@ -131,19 +135,6 @@ public class RowReducer {
 			return null;
 		}
 		return new Matrix(rows.toArray(new double[rowCount][]));
-	}
-	
-	private static Matrix processMatrix(final Function<Consumer<RowReductionStep>, Matrix> func) {
-		class Step {
-			public int number;
-		};
-		final Step s = new Step();
-		s.number = 1;
-		return func.apply((final RowReductionStep step) -> {
-			System.out.println("Step " + s.number + ": " + step.getMessage());
-			System.out.println(step.getAfterMatrix().printToString());
-			s.number++;
-		});
 	}
 	
 }

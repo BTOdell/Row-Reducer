@@ -1,6 +1,7 @@
 package edu.pcc.mth261;
 
-import java.util.function.Consumer;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * An immutable matrix class.
@@ -11,16 +12,6 @@ public class Matrix {
 	 * The backing data of the matrix.
 	 */
 	private final double[][] data;
-	
-	/**
-	 * Cache value for whether the matrix is in row echelon form (REF).
-	 */
-	private Boolean ref = null;
-	
-	/**
-	 * Cache value for whether the matrix is in reduced row echelon form (RREF).
-	 */
-	private Boolean rref = null;
 	
 	/**
 	 * Creates a zero-d square matrix with the given dimension.
@@ -89,116 +80,180 @@ public class Matrix {
 	}
 	
 	/**
-	 * 
-	 * @return
+	 * Gets the number of rows in the matrix.
 	 */
 	public int getRows() {
 		return this.data.length;
 	}
 	
 	/**
-	 * 
-	 * @return
+	 * Gets the number of columns in the matrix.
 	 */
 	public int getColumns() {
 		return this.data[0].length;
 	}
 	
 	/**
-	 * 
-	 * @return
-	 */
-	public boolean isSquare() {
-		return this.data.length == this.data[0].length;
-	}
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isREF() {
-		if (this.ref == null) {
-			// TODO
-		}
-		return this.ref;
-	}
-	
-	/**
-	 * 
-	 * @return
+	 * Gets a new matrix that is the Row Echelon Form of this matrix.
 	 */
 	public Matrix getREF() {
-		return this.getREF(null);
+		return this.rowReduce(false);
 	}
 	
 	/**
-	 * 
-	 * @param stepConsumer
-	 * @return
-	 */
-	public Matrix getREF(final Consumer<RowReductionStep> stepConsumer) {
-		return this.rowReduce(stepConsumer, false);
-	}
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isRREF() {
-		if (this.rref == null) {
-			// TODO
-		}
-		return this.rref;
-	}
-	
-	/**
-	 * 
-	 * @return
+	 * Gets a new matrix that is the Reduced Row Echelon Form of this matrix.
 	 */
 	public Matrix getRREF() {
-		return this.getRREF(null);
+		return this.rowReduce(true);
 	}
 	
 	/**
-	 * 
-	 * @param stepConsumer
-	 * @return
+	 * Row reduces the matrix to Row Echelon Form (and optionally to Reduced Row Echelon Form).
 	 */
-	public Matrix getRREF(final Consumer<RowReductionStep> stepConsumer) {
-		return this.rowReduce(stepConsumer, true);
-	}
-	
-	/**
-	 * 
-	 */
-	private Matrix rowReduce(final Consumer<RowReductionStep> stepConsumer, final boolean rref) {
+	private Matrix rowReduce(final boolean rref) {
 		final Matrix copyMatrix = new Matrix(this);
 		final double[][] data = copyMatrix.data;
 		final int rows = data.length;
 		final int columns = data[0].length;
-		final boolean hasStepConsumer = stepConsumer != null;
 		
 		int row = 0;
 		int column = 0;
-		
-		for (; column < columns; column++) {
-			
-			// Select a pivot position
-			
-			
+		// Forward elimination
+		for (; row < rows && column < columns; column++) {
+			{
+				final int pivotRow;
+				// Find pivot (non-zero value)
+				{
+					int pRow = row; // pivot row
+					for (; pRow < rows; pRow++) {
+						if (data[pRow][column] != 0) {
+							// Found pivot, break search loop
+							break;
+						}
+					}
+					pivotRow = pRow;
+				}
+				// Check to see if a pivot row was found
+				if (pivotRow >= rows) {
+					// No pivot so skip column
+					continue;
+				}
+				if (pivotRow != row) {
+					// Pivot is not in the diagonal, interchange pivot to diagonal
+					// Interchange operation
+					for (int interchangeColumn = column; interchangeColumn < columns; interchangeColumn++) {
+						final double oldValue = data[row][interchangeColumn];
+						data[row][interchangeColumn] = data[pivotRow][interchangeColumn];
+						data[pivotRow][interchangeColumn] = oldValue;
+					}
+				}
+			}
+			//
+			final double diagValue = data[row][column];
+			// Replace operations
+			for (int replaceRow = row + 1; replaceRow < rows; replaceRow++) {
+				final double replaceValue = data[replaceRow][column];
+				if (replaceValue != 0) {
+					final double replaceRatio = replaceValue / (-diagValue);
+					for (int replaceColumn = column; replaceColumn < columns; replaceColumn++) {
+						data[replaceRow][replaceColumn] += data[row][replaceColumn] * replaceRatio;
+					}
+				}
+			}
+			// Scale operation
+			if (diagValue != 1.0) {
+				final double scaleRatio = 1.0 / diagValue;
+				for (int scaleColumn = column; scaleColumn < columns; scaleColumn++) {
+					data[row][scaleColumn] *= scaleRatio;
+				}
+			}
+			row++;
 		}
 		
 		if (rref) {
 			
+			// Find all pivot columns
+			final int[] pivotColumns = new int[rows];
+			int lastPivot = -1;
+			for (int r = 0; r < rows; r++) {
+				int pivotColumn = columns;
+				for (int c = lastPivot + 1; c < columns; c++) {
+					final double value = data[r][c];
+					if (value == 0) {
+						// Ignore, next column...
+					} else if (value == 1) {
+						// Found pivot
+						pivotColumn = c;
+						break;
+					} else {
+						throw new IllegalStateException("Invalid pivot value.");
+					}
+				}
+				lastPivot = pivotColumn;
+				pivotColumns[r] = pivotColumn;
+			}
 			
+			// Back substitution
+			row--;
+			for (; row >= 0; row--) {
+				final int pivotColumn = pivotColumns[row];
+				if (pivotColumn < columns) {
+					// Replace operations
+					for (int replaceRow = row - 1; replaceRow >= 0; replaceRow--) {
+						final double replaceValue = data[replaceRow][pivotColumn];
+						if (replaceValue != 0) {
+							for (int replaceColumn = pivotColumn; replaceColumn < columns; replaceColumn++) {
+								data[replaceRow][replaceColumn] -= data[row][replaceColumn] * replaceValue;
+							}
+						}
+					}
+				}
+			}
 			
 		}
 		
+		normalizePrecision(data);
 		return copyMatrix;
 	}
 	
-	/*
+	/**
+	 * Rounds the values of the matrix to the given number of decimal places.
+	 * @param decimalPlaces the number of decimal places to round the matrix values to.
+	 * @return a new matrix with the values rounded.
+	 */
+	public Matrix round(final int decimalPlaces) {
+		final Matrix copyMatrix = new Matrix(this);
+		round(copyMatrix.data, decimalPlaces);
+		return copyMatrix;
+	}
+	
+	private static void round(final double[][] data, final int decimalPlaces) {
+		final int rows = data.length;
+		final int columns = data[0].length;
+		for (int row = 0; row < rows; row++) {
+			for (int column = 0; column < columns; column++) {
+				data[row][column] = BigDecimal.valueOf(data[row][column]).setScale(decimalPlaces, RoundingMode.HALF_UP).doubleValue();
+			}
+		}
+	}
+	
+	/**
+	 * Rounds the values of the matrix to the maximum double float point precision (15 decimal places).
+	 */
+	public Matrix normalizePrecision() {
+		final Matrix copyMatrix = new Matrix(this);
+		normalizePrecision(copyMatrix.data);
+		return copyMatrix;
+	}
+	
+	private static void normalizePrecision(final double[][] data) {
+		// Round to 15 decimals of precision (since this is the precision limit of a double)
+		round(data, 15);
+	}
+	
+	/**
 	 * Converts the matrix to a pretty-print string.
+	 * <pre>
 	 * ┌──┬──┬──┬──┬──┐
 	 * │0 │1 │2 │3 │4 │
 	 * ├──┼──┼──┼──┼──┤
@@ -206,50 +261,59 @@ public class Matrix {
 	 * ├──┼──┼──┼──┼──┤
 	 * │10│11│12│13│14│
 	 * └──┴──┴──┴──┴──┘
+	 * </pre>
 	 */
 	public String printToString() {
+		final int rows = this.getRows();
+		final int columns = this.getColumns();
+		// Calculate cell width
 		int cellWidth = 1;
-		for (int i = 0; i < this.data.length; i++) {
-			for (int j = 0; j < this.data[0].length; j++) {
-				final double n = this.data[i][j];
+		for (int row = 0; row < rows; row++) {
+			for (int column = 0; column < columns; column++) {
+				final double n = this.data[row][column];
 				cellWidth = Math.max(cellWidth, String.valueOf(n).length());
 			}
 		}
-		int j = 0;
-		final int dMax = 1 + this.data[0].length * 2;
-		final StringBuilder b = new StringBuilder(this.data.length * dMax * cellWidth);
-		for (int d = 0; d < dMax; d++) {
-			if (d % 2 == 0) {
-				if (d == 0) {
+		final int tableWidth = 1 + (columns * cellWidth) + columns;
+		final int tableHeight = 1 + (rows * 2);
+		final StringBuilder b = new StringBuilder(tableWidth * tableHeight);
+		int row = 0;
+		for (int tableRow = 0; tableRow < tableHeight; tableRow++) {
+			if ((tableRow % 2) == 0) {
+				// Print separator
+				if (tableRow == 0) {
+					// Print table top
 					b.append("┌");
-					for (int i = 0; i < this.data.length; i++) {
+					for (int column = 0; column < columns; column++) {
 						for (int c = 0; c < cellWidth; c++) {
 							b.append("─");
 						}
-						if (i < this.data.length - 1) {
+						if (column + 1 < columns) {
 							b.append("┬");
 						}
 					}
 					b.append("┐");
 					b.append("\n");
-				} else if (d == dMax - 1) {
+				} else if ((tableRow + 1) == tableHeight) {
+					// Print table bottom
 					b.append("└");
-					for (int i = 0; i < this.data.length; i++) {
+					for (int column = 0; column < columns; column++) {
 						for (int c = 0; c < cellWidth; c++) {
 							b.append("─");
 						}
-						if (i < this.data.length - 1) {
+						if (column + 1 < columns) {
 							b.append("┴");
 						}
 					}
 					b.append("┘");
 				} else {
+					// Print table borders
 					b.append("├");
-					for (int i = 0; i < this.data.length; i++) {
+					for (int column = 0; column < columns; column++) {
 						for (int c = 0; c < cellWidth; c++) {
 							b.append("─");
 						}
-						if (i < this.data.length - 1) {
+						if (column + 1 < columns) {
 							b.append("┼");
 						}
 					}
@@ -257,9 +321,10 @@ public class Matrix {
 					b.append("\n");
 				}
 			} else {
-				for (int i = 0; i < this.data.length; i++) {
+				// Print value
+				for (int column = 0; column < columns; column++) {
 					b.append("│");
-					final double n = this.data[i][j];
+					final double n = this.data[row][column];
 					final String s = String.valueOf(n);
 					b.append(s);
 					final int cellTemp = cellWidth - s.length();
@@ -269,7 +334,7 @@ public class Matrix {
 				}
 				b.append("│");
 				b.append("\n");
-				j++;
+				row++;
 			}
 		}
 		return b.toString();
@@ -282,9 +347,7 @@ public class Matrix {
 
 	/**
 	 * Gets the identity matrix of the given dimension.
-	 * 
-	 * @param dimension
-	 *            the dimension of the identity matrix to create.
+	 * @param dimension the dimension of the identity matrix to create.
 	 */
 	public static Matrix identity(final int dimension) {
 		final double[][] data = new double[dimension][dimension];
@@ -292,53 +355,6 @@ public class Matrix {
 			data[rc][rc] = 1;
 		}
 		return new Matrix(data, false);
-	}
-	
-	/**
-	 * 
-	 */
-	public static class RowReductionStep {
-		
-		private final String message;
-		private final Matrix before;
-		private final Matrix after;
-		
-		/**
-		 * 
-		 * @param message
-		 * @param before
-		 * @param after
-		 */
-		public RowReductionStep(final String message, final Matrix before, final Matrix after) {
-			this.message = message;
-			this.before = before;
-			this.after = after;
-		}
-		
-		/**
-		 * 
-		 * @return
-		 */
-		public String getMessage() {
-			return this.message;
-		}
-		
-		/**
-		 * 
-		 * @return
-		 */
-		public Matrix getBeforeMatrix() {
-			return this.before;
-		}
-		
-		/**
-		 * 
-		 * @return
-		 */
-		public Matrix getAfterMatrix() {
-			return this.after;
-		}
-		
 	}
 	
 }
