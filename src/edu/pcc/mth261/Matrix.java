@@ -156,7 +156,8 @@ public class Matrix {
 				if (replaceValue != 0) {
 					final double replaceRatio = replaceValue / (-diagValue);
 					for (int replaceColumn = column; replaceColumn < columns; replaceColumn++) {
-						data[replaceRow][replaceColumn] += data[row][replaceColumn] * replaceRatio;
+						final double newValue = data[replaceRow][replaceColumn] + data[row][replaceColumn] * replaceRatio;
+						data[replaceRow][replaceColumn] = normalizePrecision(newValue);
 					}
 				}
 			}
@@ -164,7 +165,8 @@ public class Matrix {
 			if (diagValue != 1.0) {
 				final double scaleRatio = 1.0 / diagValue;
 				for (int scaleColumn = column; scaleColumn < columns; scaleColumn++) {
-					data[row][scaleColumn] *= scaleRatio;
+					final double newValue = data[row][scaleColumn] * scaleRatio;
+					data[row][scaleColumn] = normalizePrecision(newValue);
 				}
 			}
 			row++;
@@ -174,18 +176,20 @@ public class Matrix {
 			
 			// Find all pivot columns
 			final int[] pivotColumns = new int[rows];
-			int lastPivot = -1;
-			for (int r = 0; r < rows; r++) {
-				int pivotColumn = columns;
-				for (int c = lastPivot + 1; c < columns; c++) {
-					if (data[r][c] != 0) {
-						// Found pivot
-						pivotColumn = c;
-						break;
+			{
+				int lastPivot = -1;
+				for (int r = 0; r < rows; r++) {
+					int pivotColumn = columns;
+					for (int c = lastPivot + 1; c < columns; c++) {
+						if (data[r][c] != 0) {
+							// Found pivot
+							pivotColumn = c;
+							break;
+						}
 					}
+					lastPivot = pivotColumn;
+					pivotColumns[r] = pivotColumn;
 				}
-				lastPivot = pivotColumn;
-				pivotColumns[r] = pivotColumn;
 			}
 			
 			// Back substitution
@@ -198,7 +202,8 @@ public class Matrix {
 						final double replaceValue = data[replaceRow][pivotColumn];
 						if (replaceValue != 0) {
 							for (int replaceColumn = pivotColumn; replaceColumn < columns; replaceColumn++) {
-								data[replaceRow][replaceColumn] -= data[row][replaceColumn] * replaceValue;
+								final double newValue = data[replaceRow][replaceColumn] - data[row][replaceColumn] * replaceValue;
+								data[replaceRow][replaceColumn] = normalizePrecision(newValue);
 							}
 						}
 					}
@@ -207,7 +212,6 @@ public class Matrix {
 			
 		}
 		
-		normalizePrecision(data);
 		return copyMatrix;
 	}
 	
@@ -227,9 +231,13 @@ public class Matrix {
 		final int columns = data[0].length;
 		for (int row = 0; row < rows; row++) {
 			for (int column = 0; column < columns; column++) {
-				data[row][column] = BigDecimal.valueOf(data[row][column]).setScale(decimalPlaces, RoundingMode.HALF_UP).doubleValue();
+				data[row][column] = round(data[row][column], decimalPlaces);
 			}
 		}
+	}
+	
+	private static double round(final double value, final int decimalPlaces) {
+		return BigDecimal.valueOf(value).setScale(decimalPlaces, RoundingMode.HALF_UP).doubleValue();
 	}
 	
 	/**
@@ -244,6 +252,10 @@ public class Matrix {
 	private static void normalizePrecision(final double[][] data) {
 		// Round to 15 decimals of precision (since this is the precision limit of a double)
 		round(data, 15);
+	}
+	
+	private static double normalizePrecision(final double value) {
+		return round(value, 15);
 	}
 	
 	/**

@@ -26,7 +26,8 @@ public class RowReducer {
 				if (line == null || line.isEmpty()) {
 					continue;
 				}
-				switch (line.toLowerCase()) {
+				final String lower = line.toLowerCase();
+				switch (lower) {
 					case "ref": {
 						final Matrix matrix = readMatrix(scanner);
 						if (matrix != null) {
